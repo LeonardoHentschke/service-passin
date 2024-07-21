@@ -23,3 +23,25 @@ jobs:
     - name: Build docker image
       run: docker build -t leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }} .
 
+    - name: Log into the container registry
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push image
+      run: |
+        docker push leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }}
+        docker tag leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }} leonardohentschke/service-passin:latest
+        docker push leonardohentschke/service-passin:latest
+
+    - name: Update image tag
+      uses: fjogeleit/yaml-update-action@main
+      with:
+        branch: main
+        valueFile: 'deploy/values.yaml'
+        propertyPath: 'image.tag'
+        value: "${{ steps.generate_sha.outputs.sha }}"
+        commitChange: true
+        message: 'NEW: Update tag in values helm'
+
