@@ -1,66 +1,160 @@
-import fastify from 'fastify';
-import request from 'supertest';
+import { buildFastify } from "../buildFastify";
 import { prisma } from '../lib/prisma';
-import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { createEvent } from '../routes/create-event';
 
-const app = fastify().withTypeProvider<ZodTypeProvider>();
-app.register(createEvent);
-
-describe('POST /events', () => {
-  let server: any;
-
-  beforeAll(async () => {
-    // Prepare the database
-    await prisma.$executeRaw`TRUNCATE TABLE events CASCADE;`;
-
-    // Start the server
-    server = await app.listen({ port: 0 }); // Listen on an ephemeral port
-  });
+describe('events', () => {
+  const app: any = buildFastify();
 
   afterAll(async () => {
-    // Clean up database and stop server
-    await prisma.$disconnect();
-    await app.close(); // Ensure the server is properly closed
+    await app.close();
   });
 
-  it('Deve criar um evento com sucesso', async () => {
-    const response = await request(server)
-      .post('/events')
-      .send({
-        title: "New Event",
-        details: "Details of the new event",
-        maximumAttendees: 100,
-      })
-      .expect(201);
-
-    expect(response.body).toEqual({
-      eventId: expect.any(String),
+  test('deve criar evento', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Teste",
+        details: "teste",
+        maximumAttendees: 1
+      },
     });
 
-    const event: any = await prisma.event.findUnique({
-      where: { id: response.body.eventId },
-    });
-
-    expect(event).not.toBeNull();
-    expect(event.title).toBe('New Event');
-    expect(event.details).toBe('Details of the new event');
-    expect(event.maximumAttendees).toBe(100);
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toHaveProperty('eventId');
   });
-/*
-  it('Não deve permitir criar um evento com título duplicado', async () => {
-    const response = await request(server)
-      .post('/events')
-      .send({
-        title: 'Duplicate Event',
-        details: 'Different details',
-        maximumAttendees: "30",
-      })
-      .expect(400);
 
-    expect(response.body).toEqual({
-      message: 'Another event with same title already exists.',
+  test('não deve criar evento com título muito curto', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Tes",
+        details: "teste",
+        maximumAttendees: 1
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: 'Error during validation',
+      errors: {
+        title: ['String must contain at least 4 character(s)']
+      }
     });
   });
-*/
+
+  test('deve lidar com campos opcionais nulos', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Valid Title",
+        details: null,
+        maximumAttendees: null
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toHaveProperty('eventId');
+  });
+
+  test('não deve criar evento com payload inválido', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        // Faltando campos obrigatórios
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Error during validation",
+      errors: {
+          "title": [
+              "Required"
+          ],
+          "details": [
+              "Required"
+          ],
+          "maximumAttendees": [
+              "Required"
+          ]
+      }
+    });
+  });
+
+  test('não deve criar evento com título duplicado', async () => {
+    // Primeiro cria um evento para garantir que há um evento com o mesmo título
+    await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Unique Title",
+        details: "teste",
+        maximumAttendees: 1
+      },
+    });
+
+    // Tenta criar um novo evento com o mesmo título
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Unique Title",
+        details: "teste",
+        maximumAttendees: 1
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: 'Another event with same title already exists.'
+    });
+  });
+
+  test('não deve criar evento com maximumAttendees negativo', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Valid Title",
+        details: "teste",
+        maximumAttendees: -1
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Error during validation",
+      errors: {
+          "maximumAttendees": [
+              "Number must be greater than 0"
+          ]
+      }
+    });
+  });
+
+  test('deve criar evento com maximumAttendees igual a zero', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/events',
+      payload: {
+        title: "Valid Title",
+        details: "teste",
+        maximumAttendees: 0
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Error during validation",
+      errors: {
+          "maximumAttendees": [
+              "Number must be greater than 0"
+          ]
+      }
+    });
+  });
+
 });
