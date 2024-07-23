@@ -6,7 +6,7 @@ services:
     image: postgres:16.2-alpine3.19
     container_name: db-pass-in
     ports:
-      - 5432:5432
+      - 5433:5432
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -17,8 +17,7 @@ services:
       - passin
 
   api-pass-in:
-    build:
-      context: .
+    image: leonardohentschke/service-passin:latest
     container_name: api-pass-in
     ports:
       - 3001:3333
