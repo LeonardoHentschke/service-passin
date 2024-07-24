@@ -41,6 +41,9 @@ jobs:
         sleep 20
         # Atualizar npm e instalar dependências
         docker-compose -f docker-compose.yml run --rm api-pass-in sh -c "npm install -g npm@latest && npm cache clean --force && rm -rf node_modules package-lock.json && npm install"
+        # Verificar se o Jest está instalado
+        docker-compose -f docker-compose.yml run --rm api-pass-in sh -c "npm list jest"
+        # Rodar os testes
         docker-compose -f docker-compose.yml run --rm api-pass-in npm test
         docker-compose -f docker-compose.yml down
 
