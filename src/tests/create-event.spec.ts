@@ -1,5 +1,4 @@
 import { buildFastify } from "../buildFastify";
-import { prisma } from '../lib/prisma';
 
 describe('events', () => {
   const app: any = buildFastify();
