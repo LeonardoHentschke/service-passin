@@ -18,13 +18,10 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "@faker-js/faker": "^8.4.1",
     "@types/jest": "29.5.12",
     "@types/node": "20.11.30",
-    "@types/supertest": "^6.0.2",
     "jest": "29.7.0",
     "prisma": "5.11.0",
-    "supertest": "^7.0.0",
     "ts-jest": "29.2.3",
     "ts-node": "10.9.2",
     "tsup": "8.0.2",
