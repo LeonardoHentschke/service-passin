@@ -14,7 +14,7 @@ jobs:
       postgres:
         image: postgres:16.2-alpine3.19
         ports:
-          - 5434:5432 # Alterar para corresponder ao novo mapeamento de porta
+          - 5434:5432 # Certifique-se de que a porta não está em uso
         env:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: admin
@@ -48,8 +48,14 @@ jobs:
     - name: Wait for database to be ready
       run: |
         echo "Waiting for database to be ready..."
-        while ! docker exec -it api-pass-in /bin/sh -c 'pg_isready -U admin'; do
-          sleep 1
+        for i in {1..6}; do # Tentar por até 1 minuto (6 tentativas de 10 segundos)
+          if docker exec api-pass-in pg_isready -U admin -d pass-in-db; then
+            echo "Database is ready!"
+            break
+          else
+            echo "Database not ready, waiting..."
+            sleep 10
+          fi
         done
 
     - name: Run tests
