@@ -7,30 +7,23 @@ on:
 
 jobs:
   build-and-test:
-    name: 'Build, Test, and Push'
+    name: 'Build, test and push'
     runs-on: ubuntu-latest
 
     services:
       postgres:
         image: postgres:16.2-alpine3.19
         ports:
-          - 5434:5432 # Certifique-se de que a porta não está em uso
+          - 5433:5432
         env:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: admin
           POSTGRES_DB: pass-in-db
-        options: >-
-          --health-cmd "pg_isready -U admin"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd="pg_isready -U admin -d pass-in-db" --health-interval=10s
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
 
     - name: Generate sha
       id: generate_sha
@@ -41,29 +34,13 @@ jobs:
     - name: Build docker image
       run: docker build -t leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }} .
 
-    - name: Run Docker Compose
+    - name: Run Tests
       run: |
         docker-compose -f docker-compose.yml up -d
-
-    - name: Wait for database to be ready
-      run: |
-        echo "Waiting for database to be ready..."
-        for i in {1..6}; do # Tentar por até 1 minuto (6 tentativas de 10 segundos)
-          if docker exec api-pass-in pg_isready -U admin -d pass-in-db; then
-            echo "Database is ready!"
-            break
-          else
-            echo "Database not ready, waiting..."
-            sleep 10
-          fi
-        done
-
-    - name: Run tests
-      run: |
-        docker exec -it api-pass-in npm test
-
-    - name: Shutdown Docker Compose
-      run: |
+        # Aguardando o serviço estar pronto, se necessário
+        sleep 20
+        # Rodar os testes aqui
+        docker-compose -f docker-compose.yml run --rm api-pass-in npm test
         docker-compose -f docker-compose.yml down
 
     - name: Log into the container registry
@@ -73,7 +50,6 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Push image
-      if: success() # Only push the image if the tests pass
       run: |
         docker push leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }}
         docker tag leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }} leonardohentschke/service-passin:latest
