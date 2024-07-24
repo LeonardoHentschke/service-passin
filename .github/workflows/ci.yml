@@ -6,20 +6,46 @@ on:
       - main
 
 jobs:
-  build-and-test:
-    name: 'Build, test and push'
+  test:
+    name: 'Run tests'
     runs-on: ubuntu-latest
 
     services:
       postgres:
         image: postgres:16.2-alpine3.19
         ports:
-          - 5433:5432
+          - 5432:5432
         env:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: admin
           POSTGRES_DB: pass-in-db
-        options: --health-cmd="pg_isready -U admin -d pass-in-db" --health-interval=10s
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      env:
+        DATABASE_URL: postgresql://admin:admin@localhost:5432/pass-in-db
+      run: npm test
+
+  build-and-push:
+    name: 'Build and push'
+    runs-on: ubuntu-latest
+    needs: test
 
     steps:
     - name: Checkout
@@ -33,19 +59,6 @@ jobs:
 
     - name: Build docker image
       run: docker build -t leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }} .
-
-    - name: Run Tests
-      run: |
-        docker-compose -f docker-compose.yml up -d
-        # Aguardando o serviço estar pronto, se necessário
-        sleep 20
-        # Atualizar npm e instalar dependências
-        docker-compose -f docker-compose.yml run --rm api-pass-in sh -c "npm install -g npm@latest && npm cache clean --force && rm -rf node_modules package-lock.json && npm install"
-        # Verificar se o Jest está instalado
-        docker-compose -f docker-compose.yml run --rm api-pass-in sh -c "npm list jest"
-        # Rodar os testes
-        docker-compose -f docker-compose.yml run --rm api-pass-in npm test
-        docker-compose -f docker-compose.yml down
 
     - name: Log into the container registry
       uses: docker/login-action@v3
