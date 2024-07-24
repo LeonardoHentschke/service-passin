@@ -39,8 +39,8 @@ jobs:
         docker-compose -f docker-compose.yml up -d
         # Aguardando o serviço estar pronto, se necessário
         sleep 20
-        # Instalar dependências e rodar os testes
-        docker-compose -f docker-compose.yml run --rm api-pass-in npm install
+        # Atualizar npm e instalar dependências
+        docker-compose -f docker-compose.yml run --rm api-pass-in sh -c "npm install -g npm@latest && npm cache clean --force && rm -rf node_modules package-lock.json && npm install"
         docker-compose -f docker-compose.yml run --rm api-pass-in npm test
         docker-compose -f docker-compose.yml down
 
