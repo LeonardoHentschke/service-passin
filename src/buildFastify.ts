@@ -50,7 +50,7 @@ export function buildFastify() {
     app.setErrorHandler(errorHandler)
 
     app.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-        return { message: 'Bem-vindo à API!' }
+        return { message: 'API is running, access /docs for more!' }
     })
 
     return app;
