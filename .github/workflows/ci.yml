@@ -37,6 +37,11 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Run database migrations
+      env:
+        DATABASE_URL: postgresql://admin:admin@localhost:5432/pass-in-db
+      run: npm run db:migrate
+
     - name: Run tests
       env:
         DATABASE_URL: postgresql://admin:admin@localhost:5432/pass-in-db
