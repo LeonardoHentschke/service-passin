@@ -14,7 +14,7 @@ jobs:
       postgres:
         image: postgres:16.2-alpine3.19
         ports:
-          - 5433:5432
+          - 5434:5432 # Alterar para corresponder ao novo mapeamento de porta
         env:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: admin
@@ -67,7 +67,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Push image
-      if: success()
+      if: success() # Only push the image if the tests pass
       run: |
         docker push leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }}
         docker tag leonardohentschke/service-passin:${{ steps.generate_sha.outputs.sha }} leonardohentschke/service-passin:latest
