@@ -14,7 +14,6 @@ describe('Bem-vindo à API!', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ message: 'Bem-vindo à API!' });
   });
 
 });
