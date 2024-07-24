@@ -35,4 +35,4 @@ RUN pnpm prisma generate
 
 EXPOSE 	3333
 
-CMD [ "pnpm", "start" ]
+CMD [ "pnpm", "start", "test" ]
