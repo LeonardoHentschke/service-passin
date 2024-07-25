@@ -12,6 +12,8 @@ import { getAttendeeBadge } from "./routes/get-attendee-badge";
 import { checkIn } from "./routes/check-in";
 import { getEventAttendees } from "./routes/get-event-attendees";
 import { errorHandler } from "./error-handler";
+import { getCategory } from "./routes/get-category";
+import { createCategory } from "./routes/create-category";
 
 export function buildFastify() {
     const app = fastify().withTypeProvider<ZodTypeProvider>();
@@ -46,6 +48,9 @@ export function buildFastify() {
     app.register(getAttendeeBadge)
     app.register(checkIn)
     app.register(getEventAttendees)
+
+    app.register(getCategory)
+    app.register(createCategory)
 
     app.setErrorHandler(errorHandler)
 

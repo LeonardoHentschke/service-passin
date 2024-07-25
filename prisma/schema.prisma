@@ -43,3 +43,8 @@ model CheckIn {
 
   @@map("check_ins")
 }
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String
+}
